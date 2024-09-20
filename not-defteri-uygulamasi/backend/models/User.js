@@ -2,27 +2,30 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-const userSchema = mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
+const userSchema = mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+        },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        password: {
+            type: String,
+            required: true,
+        },
+        passwordResetToken: String,
+        passwordResetExpires: Date,
     },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-    passwordResetToken: String,
-    passwordResetExpires: Date,
-}, {
-    timestamps: true,
-});
+    {
+        timestamps: true,
+    }
+);
 
-// Şifre hashleme
+// Şifreyi hashleme
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         next();
@@ -39,8 +42,11 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 // Şifre sıfırlama token oluşturma
 userSchema.methods.createPasswordResetToken = function () {
     const resetToken = crypto.randomBytes(32).toString('hex');
-    this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    this.passwordResetToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 dakika geçerli
     return resetToken;
 };
 

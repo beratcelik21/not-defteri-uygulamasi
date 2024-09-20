@@ -1,0 +1,19 @@
+# Node.js modülleri
+node_modules/
+
+# Çevresel değişkenler dosyası
+.env
+
+# Log dosyaları
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Hatalar
+stacktrace.txt
+
+# İşletim sistemi veya editör dosyaları
+.DS_Store
+Thumbs.db

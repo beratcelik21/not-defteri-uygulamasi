@@ -1,19 +1,23 @@
+// models/Category.js
+
 const mongoose = require('mongoose');
 
-const categorySchema = mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        unique: true,
+const categorySchema = mongoose.Schema(
+    {
+        name: {
+            type: String,
+            required: true,
+        },
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
     },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+    {
+        timestamps: true,
     }
-}, {
-    timestamps: true
-});
+);
 
 const Category = mongoose.model('Category', categorySchema);
 

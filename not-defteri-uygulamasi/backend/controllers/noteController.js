@@ -1,76 +1,131 @@
-const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+// controllers/noteController.js
+const Note = require('../models/Note');
+const Category = require('../models/Category');
 
-// Kullanıcı şifresi değiştirme
-const changePassword = async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
+// Not oluşturma
+const createNote = async (req, res) => {
+    const { title, content, category } = req.body;
 
     try {
-        const user = await User.findById(req.user._id);
+        // Kategorinin geçerli olup olmadığını kontrol et
+        const categoryExists = await Category.findOne({ _id: category, user: req.user._id });
 
-        if (!user || !(await user.matchPassword(oldPassword))) {
-            return res.status(401).json({ message: 'Old password is incorrect' });
+        if (!categoryExists) {
+            return res.status(400).json({ message: 'Invalid category' });
         }
 
-        user.password = newPassword;
-        await user.save();
-
-        res.status(200).json({ message: 'Password changed successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Şifre sıfırlama isteği
-const forgotPassword = async (req, res) => {
-    const { email } = req.body;
-
-    try {
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        const resetToken = user.createPasswordResetToken();
-        await user.save();
-
-        const resetURL = `${req.protocol}://${req.get('host')}/api/users/resetPassword/${resetToken}`;
-        // E-posta gönderme fonksiyonu burada olmalı
-
-        res.status(200).json({ message: 'Reset token sent to email' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Şifre sıfırlama (yeni şifre oluşturma)
-const resetPassword = async (req, res) => {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-
-    try {
-        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-        const user = await User.findOne({
-            passwordResetToken: hashedToken,
-            passwordResetExpires: { $gt: Date.now() },
+        const note = await Note.create({
+            user: req.user._id,
+            title,
+            content,
+            category,
         });
 
-        if (!user) {
-            return res.status(400).json({ message: 'Token is invalid or has expired' });
-        }
-
-        user.password = newPassword;
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        await user.save();
-
-        res.status(200).json({ message: 'Password reset successful' });
+        res.status(201).json(note);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-module.exports = { changePassword, forgotPassword, resetPassword };
+// Notları listeleme (sayfalama ile)
+const getNotes = async (req, res) => {
+    const pageSize = 10;
+    const page = Number(req.query.pageNumber) || 1;
+
+    try {
+        const count = await Note.countDocuments({ user: req.user._id });
+        const notes = await Note.find({ user: req.user._id })
+            .populate('category', 'name') // Kategori adını dahil et
+            .sort({ createdAt: -1 })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1));
+
+        res.json({ notes, page, pages: Math.ceil(count / pageSize) });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Tek bir notu getirme
+const getNoteById = async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id)
+            .populate('category', 'name');
+
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+
+        if (note.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        res.json(note);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Not güncelleme
+const updateNote = async (req, res) => {
+    const { title, content, category } = req.body;
+
+    try {
+        const note = await Note.findById(req.params.id);
+
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+
+        if (note.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        // Kategori doğrulaması
+        if (category) {
+            const categoryExists = await Category.findOne({ _id: category, user: req.user._id });
+
+            if (!categoryExists) {
+                return res.status(400).json({ message: 'Invalid category' });
+            }
+
+            note.category = category;
+        }
+
+        note.title = title || note.title;
+        note.content = content || note.content;
+
+        const updatedNote = await note.save();
+        res.json(updatedNote);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Not silme
+const deleteNote = async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id);
+
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+
+        if (note.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        await note.remove();
+        res.json({ message: 'Note removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    createNote,
+    getNotes,
+    getNoteById,
+    updateNote,
+    deleteNote,
+};

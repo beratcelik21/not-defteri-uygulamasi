@@ -1,3 +1,4 @@
+// models/Note.js
 const mongoose = require('mongoose');
 
 const noteSchema = mongoose.Schema({
@@ -15,8 +16,9 @@ const noteSchema = mongoose.Schema({
         required: true,
     },
     category: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
+        ref: 'Category',
     },
 }, {
     timestamps: true,

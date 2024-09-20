@@ -1,10 +1,12 @@
+// controllers/categoryController.js
 const Category = require('../models/Category');
 
-// Kategori ekleme
-const addCategory = async (req, res) => {
+// Kategori oluşturma
+const createCategory = async (req, res) => {
     const { name } = req.body;
 
     try {
+        // Aynı isimde kategori var mı kontrol et
         const categoryExists = await Category.findOne({ name, user: req.user._id });
 
         if (categoryExists) {
@@ -22,7 +24,17 @@ const addCategory = async (req, res) => {
     }
 };
 
-// Kategoriyi silme
+// Kategorileri listeleme
+const getCategories = async (req, res) => {
+    try {
+        const categories = await Category.find({ user: req.user._id }).sort({ name: 1 });
+        res.json(categories);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Kategori silme
 const deleteCategory = async (req, res) => {
     const { id } = req.params;
 
@@ -44,14 +56,4 @@ const deleteCategory = async (req, res) => {
     }
 };
 
-// Tüm kategorileri listeleme
-const getCategories = async (req, res) => {
-    try {
-        const categories = await Category.find({ user: req.user._id }).sort({ name: 1 });
-        res.json(categories);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-module.exports = { addCategory, deleteCategory, getCategories };
+module.exports = { createCategory, getCategories, deleteCategory };
