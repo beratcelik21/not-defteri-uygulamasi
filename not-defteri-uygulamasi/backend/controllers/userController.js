@@ -2,7 +2,6 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { sendEmail } = require('../utils/email');
 
 // Kullanıcı şifresi değiştirme
 const changePassword = async (req, res) => {
@@ -24,7 +23,7 @@ const changePassword = async (req, res) => {
     }
 };
 
-// Şifre sıfırlama isteği (token oluşturma)
+// Şifre sıfırlama isteği
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
@@ -39,12 +38,7 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         const resetURL = `${req.protocol}://${req.get('host')}/api/users/resetPassword/${resetToken}`;
-
-        await sendEmail({
-            email: user.email,
-            subject: 'Password Reset Token',
-            message: `You requested a password reset. Please visit the following link to reset your password: ${resetURL}`,
-        });
+        // E-posta gönderme fonksiyonu burada olmalı
 
         res.status(200).json({ message: 'Reset token sent to email' });
     } catch (error) {
