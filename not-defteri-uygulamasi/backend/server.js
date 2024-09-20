@@ -4,7 +4,6 @@ const connectDB = require('./config/database');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const noteRoutes = require('./routes/noteRoutes');
-const categoryRoutes = require('./routes/categoryRoutes'); // Kategori rotalarını ekliyoruz
 const { errorHandler } = require('./utils/errorHandler');
 
 // Çevresel değişkenleri yükle
@@ -22,7 +21,6 @@ app.use(cors());
 // Rotalar
 app.use('/api/users', userRoutes);
 app.use('/api/notes', noteRoutes);
-app.use('/api/categories', categoryRoutes); // Kategori API rotaları
 
 // Hata yönetimi
 app.use(errorHandler);
